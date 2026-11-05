@@ -90,7 +90,13 @@ async function deleteExcessCache() {
   }
 }
 
-export function cacheTrackSource(trackInfo, url, bitRate, from = 'netease') {
+export function cacheTrackSource(
+  trackInfo,
+  url,
+  bitRate,
+  from = 'netease',
+  source
+) {
   if (!process.env.IS_ELECTRON) return;
   const name = trackInfo.name;
   const artist =
@@ -104,25 +110,28 @@ export function cacheTrackSource(trackInfo, url, bitRate, from = 'netease') {
   axios.get(`${cover}?param=512y512`);
   axios.get(`${cover}?param=224y224`);
   axios.get(`${cover}?param=1024y1024`);
-  return axios
-    .get(url, {
-      responseType: 'arraybuffer',
-    })
-    .then(response => {
-      db.trackSources.put({
-        id: trackInfo.id,
-        source: response.data,
-        bitRate,
-        from,
-        name,
-        artist,
-        createTime: new Date().getTime(),
+  const download = source
+    ? Promise.resolve({ data: source })
+    : axios.get(url, {
+        responseType: 'arraybuffer',
       });
-      console.debug(`[debug][db.js] cached track 👉 ${name} by ${artist}`);
-      tracksCacheBytes += response.data.byteLength;
-      deleteExcessCache();
-      return { trackID: trackInfo.id, source: response.data, bitRate };
+  return download.then(async response => {
+    await db.trackSources.put({
+      id: trackInfo.id,
+      source: response.data,
+      bitRate,
+      from,
+      name,
+      artist,
+      createTime: new Date().getTime(),
+      // data: URI（bilibili 音源）体积巨大，存下来会撑爆缓存
+      url: url.startsWith('data:') ? '' : url,
     });
+    console.debug(`[debug][db.js] cached track 👉 ${name} by ${artist}`);
+    tracksCacheBytes += response.data.byteLength;
+    deleteExcessCache();
+    return { trackID: trackInfo.id, source: response.data, bitRate };
+  });
 }
 
 export function getTrackSource(id) {
@@ -145,23 +154,17 @@ export function cacheTrackDetail(track, privileges) {
 }
 
 export function getTrackDetailFromCache(ids) {
-  return db.trackDetail
-    .filter(track => {
-      return ids.includes(String(track.id));
-    })
-    .toArray()
-    .then(tracks => {
-      const result = { songs: [], privileges: [] };
-      ids.map(id => {
-        const one = tracks.find(t => String(t.id) === id);
-        result.songs.push(one?.detail);
-        result.privileges.push(one?.privileges);
-      });
-      if (result.songs.includes(undefined)) {
-        return undefined;
-      }
-      return result;
+  return db.trackDetail.bulkGet(ids.map(id => Number(id))).then(tracks => {
+    const result = { songs: [], privileges: [] };
+    tracks.forEach(one => {
+      result.songs.push(one?.detail);
+      result.privileges.push(one?.privileges);
     });
+    if (result.songs.includes(undefined)) {
+      return undefined;
+    }
+    return result;
+  });
 }
 
 export function cacheLyric(id, lyrics) {

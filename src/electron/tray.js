@@ -101,7 +101,7 @@ function createMenuTemplate(win, store) {
       icon: createMenuIcon('exit', iconTheme),
       accelerator: 'CmdOrCtrl+W',
       click: () => {
-        app.exit();
+        app.quit();
       },
     },
   ];

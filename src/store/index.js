@@ -5,6 +5,7 @@ import mutations from './mutations';
 import actions from './actions';
 import { changeAppearance, changeThemeColor } from '@/utils/common';
 import Player from '@/utils/Player';
+import createPlayerStateProxy from '@/utils/playerStateProxy';
 // vuex 自定义插件
 import saveToLocalStorage from './plugins/localStorage';
 import { getSendSettingsPlugin } from './plugins/sendSettings';
@@ -53,17 +54,6 @@ window
     }
   });
 
-let player = new Player();
-player = new Proxy(player, {
-  set(target, prop, val) {
-    // console.log({ prop, val });
-    target[prop] = val;
-    if (prop === '_howler') return true;
-    target.saveSelfToLocalStorage();
-    target.sendSelfToIpcMain();
-    return true;
-  },
-});
-store.state.player = player;
+store.state.player = createPlayerStateProxy(new Player());
 
 export default store;

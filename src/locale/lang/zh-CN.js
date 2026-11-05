@@ -185,6 +185,12 @@ export default {
       dark: '深色',
     },
     automaticallyCacheSongs: '自动缓存歌曲',
+    gaplessPlayback: '无缝播放',
+    playPauseFade: '播放 / 暂停淡入淡出',
+    playPauseFadeDescription:
+      '开启时用 200 毫秒渐变音量；关闭时直接播放和暂停，不影响歌曲间的无缝衔接',
+    gaplessPlaybackDescription:
+      '提前解码下一首并精确排程，消除歌曲切换时的静音间隙',
     clearSongsCache: '清除歌曲缓存',
     cacheCount: '已缓存 {song} 首 ({size})',
     showLyricsTranslation: '显示歌词翻译',

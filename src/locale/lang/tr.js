@@ -179,6 +179,12 @@ export default {
       dark: 'Karanlık',
     },
     automaticallyCacheSongs: 'Müzikleri otomatik çerezle',
+    gaplessPlayback: 'Boşluksuz çalma',
+    playPauseFade: 'Çalma / duraklatmada ses geçişi',
+    playPauseFadeDescription:
+      'Açıkken ses 200 ms boyunca kademeli değişir. Kapalıyken anında çalar ve duraklar. Boşluksuz geçişler etkilenmez.',
+    gaplessPlaybackDescription:
+      'Sonraki parçayı önceden çözüp tam zamanında planlayarak parçalar arasındaki sessiz boşlukları kaldırır',
     clearSongsCache: 'Müzik çerezlerini temizle',
     cacheCount: 'Çerezlenen {song} Müzikler ({size})',
     showLyricsTranslation: 'Müzik sözlerinin çevirilerini göster',

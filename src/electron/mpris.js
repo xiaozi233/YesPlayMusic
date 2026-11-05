@@ -15,7 +15,7 @@ export function createMpris(window) {
   player.on('playpause', () => renderer.send('play'));
   player.on('play', () => renderer.send('play'));
   player.on('pause', () => renderer.send('play'));
-  player.on('quit', () => app.exit());
+  player.on('quit', () => app.quit());
   player.on('position', args =>
     renderer.send('setPosition', args.position / 1000 / 1000)
   );

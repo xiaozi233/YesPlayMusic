@@ -27,9 +27,7 @@ const exitAsk = (e, win) => {
         e.preventDefault(); //阻止默认行为
         win.minimize(); //调用 最小化实例方法
       } else if (result.response == 1) {
-        win = null;
-        //app.quit();
-        app.exit(); //exit()直接关闭客户端，不会执行quit();
+        app.quit();
       }
     })
     .catch(err => {
@@ -61,9 +59,7 @@ const exitAskWithoutMac = (e, win) => {
         e.preventDefault(); //阻止默认行为
         win.hide(); //调用 最小化实例方法
       } else if (result.response === 1) {
-        win = null;
-        //app.quit();
-        app.exit(); //exit()直接关闭客户端，不会执行quit();
+        app.quit();
       }
     })
     .catch(err => {
@@ -205,9 +201,7 @@ export function initIpcMain(win, store, trayEventEmitter) {
     } else {
       let closeOpt = store.get('settings.closeAppOption');
       if (closeOpt === 'exit') {
-        win = null;
-        //app.quit();
-        app.exit(); //exit()直接关闭客户端，不会执行quit();
+        app.quit();
       } else if (closeOpt === 'minimizeToTray') {
         e.preventDefault();
         win.hide();
@@ -273,6 +267,7 @@ export function initIpcMain(win, store, trayEventEmitter) {
     );
   });
 
+  // eslint-disable-next-line no-unused-vars
   ipcMain.on('removeProxy', (event, arg) => {
     log('removeProxy');
     win.webContents.session.setProxy({});

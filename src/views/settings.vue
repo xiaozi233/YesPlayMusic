@@ -141,6 +141,44 @@
       </div>
       <div v-if="isElectron" class="item">
         <div class="left">
+          <div class="title"> {{ $t('settings.gaplessPlayback') }} </div>
+          <div class="description">
+            {{ $t('settings.gaplessPlaybackDescription') }}
+          </div>
+        </div>
+        <div class="right">
+          <div class="toggle">
+            <input
+              id="gapless-playback"
+              v-model="gaplessPlayback"
+              type="checkbox"
+              name="gapless-playback"
+            />
+            <label for="gapless-playback"></label>
+          </div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="left">
+          <div class="title">{{ $t('settings.playPauseFade') }}</div>
+          <div class="description">{{
+            $t('settings.playPauseFadeDescription')
+          }}</div>
+        </div>
+        <div class="right">
+          <div class="toggle">
+            <input
+              id="play-pause-fade"
+              v-model="playPauseFade"
+              type="checkbox"
+              name="play-pause-fade"
+            />
+            <label for="play-pause-fade"></label>
+          </div>
+        </div>
+      </div>
+      <div v-if="isElectron" class="item">
+        <div class="left">
           <div class="title"> {{ $t('settings.deviceSelector') }} </div>
         </div>
         <div class="right">
@@ -1068,6 +1106,32 @@ export default {
         if (value === false) {
           this.clearCache();
         }
+      },
+    },
+    gaplessPlayback: {
+      get() {
+        // 未设置过时默认开启
+        return this.settings.gaplessPlayback !== false;
+      },
+      set(value) {
+        this.$store.commit('updateSettings', {
+          key: 'gaplessPlayback',
+          value,
+        });
+        // 关闭后当前曲仍可继续，但已排程的下一首必须作废，从下一首起走 Howler
+        if (value === false) {
+          this.player._resetUpcoming();
+        } else {
+          this.player._refreshUpcoming();
+        }
+      },
+    },
+    playPauseFade: {
+      get() {
+        return this.settings.playPauseFade === true;
+      },
+      set(value) {
+        this.$store.commit('updateSettings', { key: 'playPauseFade', value });
       },
     },
     showLyricsTranslation: {

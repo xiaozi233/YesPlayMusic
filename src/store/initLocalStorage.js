@@ -19,6 +19,9 @@ let localStorage = {
     showPlaylistsByAppleMusic: true,
     enableUnblockNeteaseMusic: true,
     automaticallyCacheSongs: true,
+    // 无缝播放：预解码下一首并按绝对时刻排程（仅 Electron/支持 Web Audio 的环境生效）
+    gaplessPlayback: true,
+    playPauseFade: false,
     cacheLimit: 8192,
     enableReversedMode: false,
     nyancatStyle: false,

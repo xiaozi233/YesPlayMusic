@@ -184,6 +184,12 @@ export default {
       dark: 'Dark',
     },
     automaticallyCacheSongs: 'Automatically cache songs',
+    gaplessPlayback: 'Gapless playback',
+    playPauseFade: 'Fade when playing / pausing',
+    playPauseFadeDescription:
+      'Fade volume over 200 ms when enabled. Turn off to play and pause immediately. Gapless transitions are unaffected.',
+    gaplessPlaybackDescription:
+      'Decode the next track ahead and schedule it precisely to remove silent gaps between tracks',
     clearSongsCache: 'Clear Songs Cache',
     cacheCount: 'Cached {song} songs ({size})',
     showLyricsTranslation: 'Show lyrics translation',

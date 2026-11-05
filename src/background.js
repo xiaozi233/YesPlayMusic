@@ -33,6 +33,7 @@ import expressProxy from 'express-http-proxy';
 import Store from 'electron-store';
 import { createMpris, createDbus } from '@/electron/mpris';
 import { spawn } from 'child_process';
+import flushPlaybackState from './electron/playbackState';
 const clc = require('cli-color');
 const log = text => {
   console.log(`${clc.blueBright('[background.js]')} ${text}`);
@@ -66,15 +67,14 @@ const closeOnLinux = (e, win, store) => {
         if (result.response === 0) {
           win.hide(); //调用 最小化实例方法
         } else if (result.response === 1) {
-          win = null;
-          app.exit(); //exit()直接关闭客户端，不会执行quit();
+          app.quit();
         }
       })
       .catch(err => {
         log(err);
       });
   } else if (closeOpt === 'exit') {
-    win = null;
+    e.preventDefault();
     app.quit();
   } else {
     win.hide();
@@ -302,12 +302,13 @@ class Background {
 
     this.window.on('close', e => {
       log('window close event');
+      if (this.playbackStateFlushed) return;
 
       if (isLinux) {
         closeOnLinux(e, this.window, this.store);
       } else if (isMac) {
         if (this.willQuitApp) {
-          this.window = null;
+          e.preventDefault();
           app.quit();
         } else {
           e.preventDefault();
@@ -316,7 +317,7 @@ class Background {
       } else {
         let closeOpt = this.store.get('settings.closeAppOption');
         if (this.willQuitApp && (closeOpt === 'exit' || closeOpt === 'ask')) {
-          this.window = null;
+          e.preventDefault();
           app.quit();
         } else {
           e.preventDefault();
@@ -463,8 +464,18 @@ class Background {
       }
     });
 
-    app.on('before-quit', () => {
+    app.on('before-quit', event => {
       this.willQuitApp = true;
+      if (this.playbackStateFlushed || !this.window) return;
+      event.preventDefault();
+      if (this.savingPlaybackState) return;
+      this.savingPlaybackState = true;
+      flushPlaybackState(this.window)
+        .catch(error => log(`Failed to save playback state: ${error.message}`))
+        .finally(() => {
+          this.playbackStateFlushed = true;
+          app.quit();
+        });
     });
 
     app.on('quit', () => {
@@ -477,6 +488,7 @@ class Background {
     });
 
     if (!isMac) {
+      // eslint-disable-next-line no-unused-vars
       app.on('second-instance', (e, cl, wd) => {
         if (this.window) {
           this.window.show();
