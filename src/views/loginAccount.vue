@@ -77,6 +77,10 @@
           <div class="qr-code-info">
             {{ qrCodeInformation }}
           </div>
+          <div v-show="qrCodeError" class="qr-code-error">
+            <p v-html="qrCodeError"></p>
+            <a class="retry" @click="getQrCodeKey">{{ $t('login.retry') }}</a>
+          </div>
         </div>
       </div>
       <div v-show="mode !== 'qrCode'" class="confirm">
@@ -101,6 +105,26 @@
         <a v-show="mode !== 'qrCode'" @click="changeMode('qrCode')">
           二维码登录
         </a>
+        <span>|</span>
+        <a @click="showCookieLogin = !showCookieLogin">
+          {{ $t('login.cookieLogin') }}
+        </a>
+      </div>
+      <div v-show="showCookieLogin" class="cookie-login">
+        <p class="cookie-tip" v-html="$t('login.cookieLoginTip')"></p>
+        <textarea
+          v-model="cookieInput"
+          class="cookie-input"
+          :placeholder="$t('login.cookiePlaceholder')"
+          spellcheck="false"
+        ></textarea>
+        <button
+          class="cookie-confirm"
+          :disabled="cookieProcessing"
+          @click="loginWithCookie"
+        >
+          {{ $t('login.cookieLoginButton') }}
+        </button>
       </div>
       <div
         v-show="mode !== 'qrCode'"
@@ -116,14 +140,20 @@ import QRCode from 'qrcode';
 import md5 from 'crypto-js/md5';
 import NProgress from 'nprogress';
 import { mapMutations } from 'vuex';
-import { setCookies } from '@/utils/auth';
+import { setCookies, removeCookie } from '@/utils/auth';
 import nativeAlert from '@/utils/nativeAlert';
+import { userAccount } from '@/api/user';
 import {
   loginWithPhone,
   loginWithEmail,
   loginQrCodeKey,
   loginQrCodeCheck,
 } from '@/api/auth';
+
+// 网易云风控拒绝登录时可能返回的错误码：
+// -460 网络环境存在风险、-462 需要完成验证、8810/8821/8822 要求升级客户端或换登录方式。
+// 旧版登录页只处理 800/801/802/803，这些错误会被静默忽略，表现为“扫码后一直卡住”。
+const RISK_CONTROL_CODES = [-460, -462, 8810, 8821, 8822];
 
 export default {
   name: 'Login',
@@ -139,8 +169,12 @@ export default {
       inputFocus: '',
       qrCodeKey: '',
       qrCodeSvg: '',
+      qrCodeError: '',
       qrCodeCheckInterval: null,
       qrCodeInformation: '打开网易云音乐APP扫码登录',
+      showCookieLogin: false,
+      cookieInput: '',
+      cookieProcessing: false,
     };
   },
   computed: {
@@ -217,25 +251,100 @@ export default {
     handleLoginResponse(data) {
       if (!data) {
         this.processing = false;
+        nativeAlert('发生错误，请稍后重试');
         return;
       }
       if (data.code === 200) {
         setCookies(data.cookie);
-        this.updateData({ key: 'loginMode', value: 'account' });
-        this.$store.dispatch('fetchUserProfile').then(() => {
-          this.$store.dispatch('fetchLikedPlaylist').then(() => {
-            this.$router.push({ path: '/library' });
-          });
-        });
+        this.finishLogin();
       } else {
         this.processing = false;
-        nativeAlert(data.msg ?? data.message ?? '账号或密码错误，请检查');
+        if (RISK_CONTROL_CODES.includes(data.code)) {
+          nativeAlert(this.$t('login.riskControlPlain', { code: data.code }));
+        } else {
+          nativeAlert(data.msg ?? data.message ?? '账号或密码错误，请检查');
+        }
       }
     },
+    finishLogin() {
+      this.updateData({ key: 'loginMode', value: 'account' });
+      this.$store.dispatch('fetchUserProfile').then(() => {
+        this.$store.dispatch('fetchLikedPlaylist').then(() => {
+          this.$router.push({ path: '/library' });
+        });
+      });
+    },
+    /**
+     * 风控类错误统一处理：停止轮询，避免无意义地重复请求，
+     * 并引导用户改用 Cookie 登录。
+     */
+    handleLoginError(code, fallbackMessage) {
+      clearInterval(this.qrCodeCheckInterval);
+      this.qrCodeKey = '';
+      this.qrCodeSvg = '';
+      if (RISK_CONTROL_CODES.includes(code)) {
+        this.qrCodeError = this.$t('login.riskControl', { code });
+        this.showCookieLogin = true;
+      } else {
+        this.qrCodeError = fallbackMessage || this.$t('login.loginFailed');
+      }
+      NProgress.done();
+    },
+    loginWithCookie() {
+      const raw = this.cookieInput.trim();
+      if (!raw || this.cookieProcessing) return;
+
+      // 兼容两种粘贴方式：完整的 Cookie 头（MUSIC_U=xxx; __csrf=yyy）
+      // 或者只粘贴 MUSIC_U 的值。
+      const cookies = raw.includes('MUSIC_U')
+        ? raw
+            .split(/;\s*/)
+            .map(item => item.trim())
+            .filter(item => /^[^=\s]+=/.test(item))
+        : [`MUSIC_U=${raw}`];
+
+      if (!cookies.some(item => item.startsWith('MUSIC_U='))) {
+        nativeAlert(this.$t('login.cookieInvalid'));
+        return;
+      }
+
+      this.cookieProcessing = true;
+      setCookies(cookies.join(';;'));
+      userAccount()
+        .then(result => {
+          if (result?.code === 200 && result.profile) {
+            this.cookieProcessing = false;
+            this.finishLogin();
+          } else {
+            removeCookie('MUSIC_U');
+            this.cookieProcessing = false;
+            nativeAlert(this.$t('login.cookieInvalid'));
+          }
+        })
+        .catch(() => {
+          removeCookie('MUSIC_U');
+          this.cookieProcessing = false;
+          nativeAlert(this.$t('login.cookieInvalid'));
+        });
+    },
     getQrCodeKey() {
-      return loginQrCodeKey().then(result => {
-        if (result.code === 200) {
+      clearInterval(this.qrCodeCheckInterval);
+      this.qrCodeError = '';
+      return loginQrCodeKey()
+        .then(result => {
+          if (!result) {
+            this.handleLoginError(undefined, this.$t('login.loginFailed'));
+            return;
+          }
+          if (result.code !== 200 || !result.data?.unikey) {
+            this.handleLoginError(
+              result.code,
+              result.message ?? result.msg ?? this.$t('login.loginFailed')
+            );
+            return;
+          }
           this.qrCodeKey = result.data.unikey;
+          this.qrCodeInformation = '打开网易云音乐APP扫码登录';
           QRCode.toString(
             `https://music.163.com/login?codekey=${this.qrCodeKey}`,
             {
@@ -259,31 +368,43 @@ export default {
             .finally(() => {
               NProgress.done();
             });
-        }
-        this.checkQrCodeLogin();
-      });
+          this.checkQrCodeLogin();
+        })
+        .catch(error => {
+          this.handleLoginError(
+            undefined,
+            `${this.$t('login.loginFailed')}\n${error}`
+          );
+        });
     },
     checkQrCodeLogin() {
       // 清除二维码检测
       clearInterval(this.qrCodeCheckInterval);
       this.qrCodeCheckInterval = setInterval(() => {
         if (this.qrCodeKey === '') return;
-        loginQrCodeCheck(this.qrCodeKey).then(result => {
-          if (result.code === 800) {
-            this.getQrCodeKey(); // 重新生成QrCode
-            this.qrCodeInformation = '二维码已失效，请重新扫码';
-          } else if (result.code === 802) {
-            this.qrCodeInformation = '扫描成功，请在手机上确认登录';
-          } else if (result.code === 801) {
-            this.qrCodeInformation = '打开网易云音乐APP扫码登录';
-          } else if (result.code === 803) {
-            clearInterval(this.qrCodeCheckInterval);
-            this.qrCodeInformation = '登录成功，请稍等...';
-            result.code = 200;
-            result.cookie = result.cookie.replaceAll(' HTTPOnly', '');
-            this.handleLoginResponse(result);
-          }
-        });
+        loginQrCodeCheck(this.qrCodeKey)
+          .then(result => {
+            if (!result) return;
+            if (result.code === 800) {
+              this.getQrCodeKey(); // 重新生成QrCode
+              this.qrCodeInformation = '二维码已失效，请重新扫码';
+            } else if (result.code === 802) {
+              this.qrCodeInformation = '扫描成功，请在手机上确认登录';
+            } else if (result.code === 801) {
+              this.qrCodeInformation = '打开网易云音乐APP扫码登录';
+            } else if (result.code === 803) {
+              clearInterval(this.qrCodeCheckInterval);
+              this.qrCodeInformation = '登录成功，请稍等...';
+              result.code = 200;
+              result.cookie = (result.cookie ?? '').replaceAll(' HTTPOnly', '');
+              this.handleLoginResponse(result);
+            } else if (RISK_CONTROL_CODES.includes(result.code)) {
+              this.handleLoginError(result.code, result.message ?? result.msg);
+            }
+          })
+          .catch(() => {
+            // 轮询期间的网络抖动不应中断登录流程
+          });
       }, 1000);
     },
     changeMode(mode) {
@@ -487,5 +608,73 @@ button.loading {
   color: var(--color-text);
   text-align: center;
   margin-bottom: 28px;
+}
+
+.qr-code-error {
+  max-width: 340px;
+  margin: -12px auto 24px auto;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(236, 65, 65, 0.08);
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: left;
+
+  .retry {
+    display: inline-block;
+    margin-top: 8px;
+    color: var(--color-primary);
+    cursor: pointer;
+  }
+}
+
+.cookie-login {
+  width: 300px;
+  margin-top: 20px;
+
+  .cookie-tip {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--color-text);
+    opacity: 0.68;
+  }
+
+  .cookie-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 88px;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    outline: none;
+    resize: none;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--color-text);
+    background: var(--color-secondary-bg);
+  }
+
+  .cookie-confirm {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-primary);
+    background-color: var(--color-primary-bg);
+    transition: 0.2s;
+
+    &:hover:not(:disabled) {
+      transform: scale(1.03);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: unset;
+    }
+  }
 }
 </style>

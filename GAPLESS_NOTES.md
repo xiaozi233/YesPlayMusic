@@ -1,6 +1,6 @@
 # 无缝播放实现说明（Gapless Playback）
 
-无缝播放、暂停/继续、切歌性能及退出恢复的实现与验证记录。
+对照 `AGENT_PROMPT_GAPLESS.md` 的实现记录。代码尚未 commit。
 
 ## 1. 改动文件与职责
 
@@ -16,7 +16,7 @@
 | `src/views/settings.vue` | 「无缝播放」开关（仅 Electron）及「播放 / 暂停淡入淡出」开关；淡变默认关闭 |
 | `src/components/Player.vue` | 音源标签改用 `player.currentSourceLabel`（Web Audio 模式没有 `_howler`） |
 | `src/electron/ipcRenderer.js` | MPRIS `setPosition` 改走 `player.seek()` |
-| `src/locale/lang/*.js` | 无缝播放与播放/暂停淡变设置的四种语言文案 |
+| `src/locale/lang/*.js` | 设置项与登录相关文案 |
 
 ## 2. 调度时钟与边界推进
 
@@ -96,6 +96,9 @@ Node 24 构建旧 Webpack 4 时需要设置 `NODE_OPTIONS=--openssl-legacy-provi
 
 - [x] Vue CLI `lint --no-fix`（0 error，9 个已有 warning）
 - [x] Vue CLI `build`（Web 构建成功，已有 CSS 顺序和包体积警告）
+- [x] `npm run build:app`（Windows 免安装目录、便携版、安装版已更新，app.asar 已核对包含本轮播放改动）
+- [x] `ncmModDef` 全部 124 个模块在切换后的 API 包下可加载（此前验证，本轮未重测）
+- [x] `startNeteaseMusicApi()` 实际启动成功：`/login/qr/key` 返回 200、`/song/detail` 正常（此前验证，本轮未重测）
 - [x] 54 个回归场景、原生解码/渲染、边界推进、seek/pause/resume、直接输出时钟和自定义输出桥生命周期（上述数据）
 - [x] 独立临时配置的 4 个 Electron 进程依次启动/正常退出，实际 localStorage 落盘；Web Audio / Howler 恢复歌曲、队列下标、精确 offset 并从该位置播放
 
@@ -109,7 +112,63 @@ Node 24 构建旧 Webpack 4 时需要设置 `NODE_OPTIONS=--openssl-legacy-provi
 - [ ] 输出设备切换（MediaStream 桥接）
 - [ ] 无网络/灰歌的 toast 与自动下一首
 
-## 7. 退出与重启恢复
+## 7. 登录问题修复（issue #2493）
+
+根因：`@neteaseapireborn/api` 已废弃，其 4.29.13 只是 `@neteasecloudmusicapienhanced/api`
+的转发壳（没有 `module/` 目录），而旧版 4.29.7 的二维码接口仍走老链路，
+被网易云风控拦截为 `-462` / `8821`。
+
+改动：
+
+1. 依赖切换到 `@neteasecloudmusicapienhanced/api@^4.41.1`；同步
+   `src/ncmModDef.js`、`src/electron/services.js`、`src/electron/scrobble.js`、`yarn.lock`。
+   新包的二维码接口使用 `interface.music.163.com` + `type=3`。
+2. `src/views/loginAccount.vue`：
+   - 二维码 key 失败时停止轮询并展示原因（旧代码会静默轮询直到超时）；
+   - 显式处理 `-460 / -462 / 8810 / 8821 / 8822`，提示关闭代理/VPN、换登录方式或使用 Cookie；
+   - 新增「Cookie 登录」：支持粘贴完整 Cookie 或仅 `MUSIC_U`，用 `/user/account` 校验后落库。
+3. 4 种语言的文案。
+
+验证（本机网络）：
+
+```
+GET /login/qr/key   -> {"code":200,"unikey":"..."}      （旧链路为 -462）
+GET /login/qr/check -> {"code":801,"message":"等待扫码"}
+```
+
+> 若网络 IP 本身已被风控，二维码仍可能被拒；此时界面会明确提示并引导到 Cookie 登录，
+> 不再出现「扫码后一直卡住、无任何反馈」。
+
+## 8. 一键构建（Windows）
+
+```sh
+npm run build:app          # 或双击仓库根目录的 build-app.cmd
+```
+
+脚本 `scripts/build-app.js` 会补齐 `.env`、检查依赖/Electron 二进制、
+Node 17+ 自动加 `--openssl-legacy-provider`，然后调用 electron-builder。产物：
+
+```
+dist_electron/win-unpacked/YesPlayMusic.exe        # 免安装，双击即用
+dist_electron/YesPlayMusic 0.4.11.exe              # 便携版
+dist_electron/YesPlayMusic Setup 0.4.11.exe        # 安装版
+```
+
+打包过程中修掉的两个兼容性问题：
+
+1. **Webpack 4 解析不了新版 API 的 ESM 依赖**（jsdom → `@csstools/*`）。
+   `ncmModDef.js` / `services.js` 改用运行时 require，并在 `vue.config.js`
+   的 `electronBuilder.externals` 中声明 `@neteasecloudmusicapienhanced/api`，
+   否则插件会把它当作“已打进 bundle”而从打包依赖里剔除。
+2. **Electron 13 内置 Node 14.16**，新版 API（express 5 / jsdom）用到
+   `Object.hasOwn`、`Array.prototype.at`、`String.prototype.replaceAll`、
+   `structuredClone` 和 `require('node:xxx')`。`src/electron/nodeCompat.js`
+   补齐这些 API，并在加载 API 包之前导入。
+
+验证：打包后的 `win-unpacked/YesPlayMusic.exe` 可正常启动，
+内置服务 `http://127.0.0.1:27232/api/login/qr/key` 返回 `{"code":200,"unikey":...}`。
+
+## 9. 退出与重启恢复
 
 - 全量 `player` 快照内保存 `_playbackState: { trackID, position }`，位置直接读取音频后端，
   不使用可能滞后一秒的 UI 进度。切歌加载途中保存实际音源对应的歌曲，并对齐列表下标。

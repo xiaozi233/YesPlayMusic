@@ -92,6 +92,19 @@ export default {
       YesPlayMusic is not the official website of NetEase Music, please consider carefully before entering account information. You can also go to <a href="https://github.com/qier222/YesPlayMusic">YesPlayMusic's GitHub repository</a> to build and use the self-hosted NetEase Music API.`,
     noticeElectron: `Your password will be MD5 encrypted locally and then transmitted to NetEase Music API.<br />
       YesPlayMusic promises not to save any of your account information to the cloud.<br />`,
+    retry: 'Retry',
+    loginFailed: 'Login request failed, please try again later',
+    riskControl: `NetEase rejected this login request (code {code}).<br />
+      This is usually risk control triggered by your current network IP. You can try:<br />
+      1. Disable proxy / VPN and retry;<br />
+      2. Log in with phone or email + password instead;<br />
+      3. Use "Cookie Login" below to import the MUSIC_U cookie from your browser.`,
+    riskControlPlain: `NetEase rejected this login request (code {code}), usually risk control triggered by your current network IP. Please disable proxy / VPN and retry, or use Cookie Login.`,
+    cookieLogin: 'Cookie Login',
+    cookieLoginTip: `After logging in to <a href="https://music.163.com" target="_blank">music.163.com</a> in your browser, open DevTools → Application → Cookies and paste the value of MUSIC_U below.`,
+    cookiePlaceholder: 'MUSIC_U=xxxx, or just the MUSIC_U value',
+    cookieLoginButton: 'Login with Cookie',
+    cookieInvalid: 'Cookie is invalid or expired, please get a new one',
   },
   mv: {
     moreVideo: 'More Videos',

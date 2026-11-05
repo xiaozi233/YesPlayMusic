@@ -89,6 +89,19 @@ export default {
         自行編譯並使用自託管的網易雲 API。`,
     noticeElectron: `您的密碼會在本地進行 MD5 加密後再傳輸到網易雲 API。<br />
         YesPlayMusic 不會傳輸你的帳戶資料到任何非網易雲音樂官方的伺服器。<br />`,
+    retry: '重試',
+    loginFailed: '登入請求失敗，請稍後重試',
+    riskControl: `網易雲拒絕了本次登入請求（錯誤碼 {code}）。<br />
+      這通常是目前網路 IP 觸發的風控，可以嘗試：<br />
+      1. 關閉代理 / VPN / 加速器後重試；<br />
+      2. 改用手機號碼或信箱 + 密碼登入；<br />
+      3. 使用下方的「Cookie 登入」匯入瀏覽器中的 MUSIC_U。`,
+    riskControlPlain: `網易雲拒絕了本次登入請求（錯誤碼 {code}），通常是目前網路 IP 觸發的風控。請關閉代理 / VPN 後重試，或改用 Cookie 登入。`,
+    cookieLogin: 'Cookie 登入',
+    cookieLoginTip: `在瀏覽器登入 <a href="https://music.163.com" target="_blank">music.163.com</a> 後，開啟開發者工具 → Application → Cookies，複製 MUSIC_U 的值貼到下方。`,
+    cookiePlaceholder: 'MUSIC_U=xxxx，或直接貼上 MUSIC_U 的值',
+    cookieLoginButton: '使用 Cookie 登入',
+    cookieInvalid: 'Cookie 無效或已過期，請重新取得',
   },
   mv: {
     moreVideo: '更多影片',

@@ -93,6 +93,19 @@ export default {
       自行构建并使用自托管的网易云 API。`,
     noticeElectron: `你的密码会在本地进行 MD5 加密后再传输到网易云 API。<br />
       YesPlayMusic 不会传输你的账号数据到任何非网易云音乐官方的服务器。<br />`,
+    retry: '重试',
+    loginFailed: '登录请求失败，请稍后重试',
+    riskControl: `网易云拒绝了本次登录请求（错误码 {code}）。<br />
+      这通常是当前网络 IP 触发的风控，可以尝试：<br />
+      1. 关闭代理 / VPN / 加速器后重试；<br />
+      2. 改用手机号或邮箱 + 密码登录；<br />
+      3. 使用下方的「Cookie 登录」导入浏览器中的 MUSIC_U。`,
+    riskControlPlain: `网易云拒绝了本次登录请求（错误码 {code}），通常是当前网络 IP 触发的风控。请关闭代理 / VPN 后重试，或改用 Cookie 登录。`,
+    cookieLogin: 'Cookie 登录',
+    cookieLoginTip: `在浏览器登录 <a href="https://music.163.com" target="_blank">music.163.com</a> 后，打开开发者工具 → Application → Cookies，复制 MUSIC_U 的值粘贴到下方。`,
+    cookiePlaceholder: 'MUSIC_U=xxxx，或直接粘贴 MUSIC_U 的值',
+    cookieLoginButton: '使用 Cookie 登录',
+    cookieInvalid: 'Cookie 无效或已过期，请重新获取',
   },
   mv: {
     moreVideo: '更多视频',

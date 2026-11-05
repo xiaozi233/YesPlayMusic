@@ -88,6 +88,20 @@ export default {
       YesPlayMusic, NetEase Music'in resmi websitesi değildir, lütfen hesap bilgilerinizi girmeden önce dikkatlice düşününüz. Aynı zamanda, Kendi NetEase Musix API'nızı host etmek için <a href="https://github.com/qier222/YesPlayMusic">YesPlayMusic'in GitHub Repo'suna</a> gidebilirsiniz.`,
     noticeElectron: `YesPlayMusic hesabınızın hiçbir bilgisini kaydetmeyeceğine dair söz veriyor<br />
       Şifren MD5 şifreleme ile yerel olarak şifrelenir ve daha sonra NetEase Müzik API'sine gönderilir<br />`,
+    retry: 'Tekrar dene',
+    loginFailed:
+      'Giriş isteği başarısız oldu, lütfen daha sonra tekrar deneyin',
+    riskControl: `NetEase bu giriş isteğini reddetti (kod {code}).<br />
+      Bu genellikle mevcut ağ IP nizden kaynaklanan risk kontrolüdür.<br />
+      1. Proxy / VPN kapatıp tekrar deneyin;<br />
+      2. Telefon veya e-posta + şifre ile giriş yapın;<br />
+      3. Aşağıdaki "Cookie ile giriş" ile tarayıcınızdaki MUSIC_U değerini içe aktarın.`,
+    riskControlPlain: `NetEase bu giriş isteğini reddetti (kod {code}), bu genellikle mevcut ağ IP nizden kaynaklanan risk kontrolüdür. Lütfen proxy / VPN kapatıp tekrar deneyin veya Cookie ile giriş yapın.`,
+    cookieLogin: 'Cookie ile giriş',
+    cookieLoginTip: `Tarayıcınızda <a href="https://music.163.com" target="_blank">music.163.com</a> adresine giriş yaptıktan sonra DevTools → Application → Cookies bölümünü açın ve MUSIC_U değerini aşağıya yapıştırın.`,
+    cookiePlaceholder: 'MUSIC_U=xxxx veya doğrudan MUSIC_U değeri',
+    cookieLoginButton: 'Cookie ile giriş yap',
+    cookieInvalid: 'Cookie geçersiz veya süresi dolmuş, lütfen yenisini alın',
   },
   mv: {
     moreVideo: 'Daha Fazla Video',

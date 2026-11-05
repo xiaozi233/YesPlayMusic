@@ -7,12 +7,12 @@
  * (进入「最近播放」)，再发 `play` (累计「听歌排行」)，这里按同样的方式上报。
  *
  * 参考 @neteasecloudmusicapienhanced/api 的 module/scrobble.js。
- * @neteaseapireborn/api 自带的 request 不支持自定义 eapi 域名，
+ * @neteasecloudmusicapienhanced/api 自带的 request 不支持自定义 eapi 域名，
  * 所以这里直接使用它的 eapi 加密并自行发送请求。
  */
 const axios = require('axios');
-const crypto = require('@neteaseapireborn/api/util/crypto');
-const { generateDeviceId } = require('@neteaseapireborn/api/util');
+const crypto = require('@neteasecloudmusicapienhanced/api/util/crypto');
+const { generateDeviceId } = require('@neteasecloudmusicapienhanced/api/util');
 
 const CLIENTLOG_DOMAIN = 'https://clientlog.music.163.com';
 const WEBLOG_URI = '/api/feedback/weblog';

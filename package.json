@@ -8,6 +8,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
+    "build:app": "node scripts/build-app.js",
     "test:gapless": "node tests/gapless-playback.test.js",
     "test:gapless:audio": "node tests/gapless-audio.electron.js",
     "test:playback:restore": "node tests/playback-restore.electron.js",
@@ -22,14 +23,14 @@
     "postinstall": "electron-builder install-app-deps",
     "postuninstall": "electron-builder install-app-deps",
     "prettier": "npx prettier --write ./src",
-    "netease_api:run": "npx @neteaseapireborn/api"
+    "netease_api:run": "npx @neteasecloudmusicapienhanced/api"
   },
   "main": "background.js",
   "engines": {
     "node": "14 || 16"
   },
   "dependencies": {
-    "@neteaseapireborn/api": "^4.29.7",
+    "@neteasecloudmusicapienhanced/api": "^4.41.1",
     "@unblockneteasemusic/rust-napi": "^0.4.0",
     "axios": "^0.26.1",
     "change-case": "^4.1.2",

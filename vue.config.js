@@ -86,7 +86,12 @@ module.exports = {
     // electron-builder的配置文件
     electronBuilder: {
       nodeIntegration: true,
-      externals: ['@unblockneteasemusic/rust-napi'],
+      externals: [
+        '@unblockneteasemusic/rust-napi',
+        // 主进程通过运行时 require 加载（见 src/ncmModDef.js），
+        // 必须标记为 external，否则打包时会被当作“已打bundle”剔除
+        '@neteasecloudmusicapienhanced/api',
+      ],
       builderOptions: {
         productName: 'YesPlayMusic',
         copyright: 'Copyright © YesPlayMusic',
